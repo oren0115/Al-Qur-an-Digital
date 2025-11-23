@@ -1,6 +1,6 @@
 import type { ApiResponse, Surah, SurahDetail, Tafsir } from "@/types/api";
 
-const API_BASE = import.meta.env.VITE_BASE_URL;
+const API_BASE = import.meta.env.VITE_BASE_URL || "https://equran.id/api/v2";
 
 export async function getSurahList(): Promise<Surah[]> {
   const response = await fetch(`${API_BASE}/surat`);

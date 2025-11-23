@@ -55,6 +55,7 @@ export interface Bookmark {
   surahNama: string;
   ayatNomor: number;
   teksArab: string;
+  teksLatin?: string;
   teksIndonesia: string;
   timestamp: number;
 }

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trash2, Share2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -5,23 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useBookmark } from "@/contexts/BookmarkContext";
 import { useSettings } from "@/contexts/SettingsContext";
+import { ShareDialog } from "@/components/ShareDialog";
 
 export function BookmarkPage() {
   const { bookmarks, removeBookmark } = useBookmark();
   const { settings } = useSettings();
   const navigate = useNavigate();
+  const [shareDialog, setShareDialog] = useState<{
+    open: boolean;
+    bookmark: (typeof bookmarks)[0] | null;
+  }>({ open: false, bookmark: null });
 
   const handleRemove = (surahNomor: number, ayatNomor: number) => {
     removeBookmark(surahNomor, ayatNomor);
   };
 
-  const handleShare = async (bookmark: typeof bookmarks[0]) => {
-    if (navigator.share) {
-      await navigator.share({
-        title: `${bookmark.surahNama} - Ayat ${bookmark.ayatNomor}`,
-        text: `${bookmark.teksArab}\n\n${bookmark.teksIndonesia}`,
-      });
-    }
+  const handleShare = (bookmark: (typeof bookmarks)[0]) => {
+    setShareDialog({ open: true, bookmark });
   };
 
   const handleNavigate = (surahNomor: number) => {
@@ -96,6 +97,18 @@ export function BookmarkPage() {
           </div>
         )}
       </main>
+
+      {shareDialog.bookmark && (
+        <ShareDialog
+          open={shareDialog.open}
+          onOpenChange={(open) => setShareDialog({ open, bookmark: open ? shareDialog.bookmark : null })}
+          surahNama={shareDialog.bookmark.surahNama}
+          ayatNomor={shareDialog.bookmark.ayatNomor}
+          teksArab={shareDialog.bookmark.teksArab}
+          teksLatin={shareDialog.bookmark.teksLatin || ""}
+          teksIndonesia={shareDialog.bookmark.teksIndonesia}
+        />
+      )}
     </div>
   );
 }

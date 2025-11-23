@@ -6,15 +6,17 @@ import { Slider } from "@/components/ui/slider";
 interface AudioPlayerProps {
   audioUrl: string;
   onEnded?: () => void;
+  audioRef?: React.RefObject<HTMLAudioElement | null>;
 }
 
-export function AudioPlayer({ audioUrl, onEnded }: AudioPlayerProps) {
+export function AudioPlayer({ audioUrl, onEnded, audioRef: externalRef }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const internalRef = useRef<HTMLAudioElement>(null);
+  const audioRef = externalRef || internalRef;
 
   useEffect(() => {
     const audio = audioRef.current;

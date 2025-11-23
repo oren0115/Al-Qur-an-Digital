@@ -1,77 +1,150 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bookmark, BookmarkCheck, Copy, Share2, Play } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AudioPlayer } from "@/components/AudioPlayer";
-import { getSurahDetail } from "@/services/api";
-import { useSettings } from "@/contexts/SettingsContext";
-import { useBookmark } from "@/contexts/BookmarkContext";
-import { Slider } from "@/components/ui/slider";
+import { AyatCard } from "@/components/AyatCard";
+import { NoteDialog } from "@/components/NoteDialog";
+import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import type { SurahDetail as SurahDetailType, Ayat } from "@/types/api";
+import { Slider } from "@/components/ui/slider";
+import { getSurahDetail, getTafsir } from "@/services/api";
+import { useSettings } from "@/contexts/SettingsContext";
+import { useHistory } from "@/contexts/HistoryContext";
+import type { SurahDetail as SurahDetailType } from "@/types/api";
+import type { Tafsir } from "@/types/api";
+
+const QARI_OPTIONS = [
+  { value: "01", label: "Abdullah Al-Juhany" },
+  { value: "02", label: "Abdul Muhsin Al-Qasim" },
+  { value: "03", label: "Abdurrahman As-Sudais" },
+  { value: "04", label: "Ibrahim Al-Dossari" },
+  { value: "05", label: "Misyari Rasyid Al-Afasy" },
+];
 
 export function SurahDetail() {
   const { nomor } = useParams<{ nomor: string }>();
   const navigate = useNavigate();
   const { settings, updateSettings } = useSettings();
-  const { addBookmark, removeBookmark, isBookmarked } = useBookmark();
+  const { addHistory } = useHistory();
   const [surah, setSurah] = useState<SurahDetailType | null>(null);
+  const [tafsir, setTafsir] = useState<Tafsir | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentAudio, setCurrentAudio] = useState<string>("");
+  const [currentAyatIndex, setCurrentAyatIndex] = useState<number>(-1);
   const [showSettings, setShowSettings] = useState(false);
+  const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [selectedAyatForNote, setSelectedAyatForNote] = useState<number>(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
-    async function loadSurah() {
+    let isMounted = true;
+    
+    async function loadData() {
       if (!nomor) return;
       try {
-        const data = await getSurahDetail(Number(nomor));
-        setSurah(data);
+        const surahData = await getSurahDetail(Number(nomor));
+        if (!isMounted) return;
+        
+        setSurah(surahData);
+        addHistory(surahData.nomor, surahData.nama, surahData.namaLatin);
+        
+        try {
+          const tafsirData = await getTafsir(Number(nomor));
+          if (!isMounted) return;
+          setTafsir(tafsirData);
+        } catch (tafsirError) {
+          console.warn("Failed to load tafsir:", tafsirError);
+          if (isMounted) {
+            setTafsir(null);
+          }
+        }
       } catch (error) {
         console.error("Failed to load surah:", error);
+        if (isMounted) {
+          setLoading(false);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
-    loadSurah();
+    
+    loadData();
+    
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nomor]);
 
-  const handlePlayAudio = (ayat: Ayat) => {
-    const audioUrl = ayat.audio["01"] || ayat.audio["02"] || Object.values(ayat.audio)[0];
-    if (audioUrl) setCurrentAudio(audioUrl);
+  const handlePlayAudio = (audioUrl: string, ayatIndex: number) => {
+    setCurrentAudio(audioUrl);
+    setCurrentAyatIndex(ayatIndex);
   };
 
-  const handleBookmark = (ayat: Ayat) => {
-    if (!surah) return;
-    if (isBookmarked(surah.nomor, ayat.nomorAyat)) {
-      removeBookmark(surah.nomor, ayat.nomorAyat);
-    } else {
-      addBookmark({
-        surahNomor: surah.nomor,
-        surahNama: surah.namaLatin,
-        ayatNomor: ayat.nomorAyat,
-        teksArab: ayat.teksArab,
-        teksIndonesia: ayat.teksIndonesia,
-      });
+  const handleAudioEnded = () => {
+    if (settings.autoPlayNext && surah && currentAyatIndex >= 0) {
+      const nextIndex = currentAyatIndex + 1;
+      if (nextIndex < surah.ayat.length) {
+        const nextAyat = surah.ayat[nextIndex];
+        const audioUrl =
+          nextAyat.audio[settings.selectedQari] ||
+          nextAyat.audio["01"] ||
+          Object.values(nextAyat.audio)[0];
+        if (audioUrl) {
+          setTimeout(() => {
+            setCurrentAudio(audioUrl);
+            setCurrentAyatIndex(nextIndex);
+            audioRef.current?.play();
+          }, 500);
+          return;
+        }
+      }
     }
-  };
-
-  const handleCopy = async (ayat: Ayat) => {
-    const text = `${ayat.teksArab}\n\n${ayat.teksLatin}\n\n${ayat.teksIndonesia}`;
-    await navigator.clipboard.writeText(text);
-  };
-
-  const handleShare = async (ayat: Ayat) => {
-    if (navigator.share) {
-      await navigator.share({
-        title: `${surah?.namaLatin} - Ayat ${ayat.nomorAyat}`,
-        text: `${ayat.teksArab}\n\n${ayat.teksIndonesia}`,
-      });
+    if (settings.repeatMode === "ayat" && currentAyatIndex >= 0) {
+      const ayat = surah?.ayat[currentAyatIndex];
+      if (ayat) {
+        const audioUrl =
+          ayat.audio[settings.selectedQari] ||
+          ayat.audio["01"] ||
+          Object.values(ayat.audio)[0];
+        if (audioUrl) {
+          setTimeout(() => {
+            setCurrentAudio(audioUrl);
+            audioRef.current?.play();
+          }, 500);
+          return;
+        }
+      }
     }
+    if (settings.repeatMode === "surah" && surah) {
+      const firstAyat = surah.ayat[0];
+      const audioUrl =
+        firstAyat.audio[settings.selectedQari] ||
+        firstAyat.audio["01"] ||
+        Object.values(firstAyat.audio)[0];
+      if (audioUrl) {
+        setTimeout(() => {
+          setCurrentAudio(audioUrl);
+          setCurrentAyatIndex(0);
+          audioRef.current?.play();
+        }, 500);
+        return;
+      }
+    }
+    setCurrentAudio("");
+    setCurrentAyatIndex(-1);
+  };
+
+  const handleNoteClick = (ayatNomor: number) => {
+    setSelectedAyatForNote(ayatNomor);
+    setShowNoteDialog(true);
   };
 
   if (loading) {
@@ -95,14 +168,9 @@ export function SurahDetail() {
       <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="p-4">
           <div className="mb-2 flex items-center justify-between">
-            <Button variant="ghost" className="cursor-pointer" size="icon-sm" onClick={() => navigate("/")}>
+            <Button variant="ghost" size="icon-sm" className="cursor-pointer" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            {/* <div className="flex gap-2">
-              <Button variant="ghost" className="cursor-pointer" size="icon-sm" onClick={() => setShowSettings(true)}>
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div> */}
           </div>
           <h1 className="mb-1 text-2xl font-bold">{surah.namaLatin}</h1>
           <p className="mb-2 text-xl font-medium leading-relaxed">{surah.nama}</p>
@@ -115,62 +183,16 @@ export function SurahDetail() {
 
       <main className="p-4">
         <div className="space-y-6">
-          {surah.ayat.map((ayat) => (
-            <Card key={ayat.nomorAyat} className="relative">
-              <CardContent className="p-4">
-                <div className="mb-3 flex items-start justify-between gap-2">
-                  <Badge
-                    variant="secondary"
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                  >
-                    {ayat.nomorAyat}
-                  </Badge>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="cursor-pointer"
-                      onClick={() => handlePlayAudio(ayat)}
-                    >
-                      <Play className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="cursor-pointer"
-                      onClick={() => handleBookmark(ayat)}
-                    >
-                      {isBookmarked(surah.nomor, ayat.nomorAyat) ? (
-                        <BookmarkCheck className="h-4 w-4 text-primary" />
-                      ) : (
-                        <Bookmark className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button variant="ghost" className="cursor-pointer" size="icon-sm" onClick={() => handleCopy(ayat)}>
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" className="cursor-pointer" size="icon-sm" onClick={() => handleShare(ayat)}>
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <p
-                  className="mb-3 text-right leading-loose"
-                  style={{ fontSize: `${settings.arabFontSize}px` }}
-                >
-                  {ayat.teksArab}
-                </p>
-                <p
-                  className="mb-2 text-muted-foreground"
-                  style={{ fontSize: `${settings.latinFontSize}px` }}
-                >
-                  {ayat.teksLatin}
-                </p>
-                {settings.showTranslation && (
-                  <p className="text-sm leading-relaxed">{ayat.teksIndonesia}</p>
-                )}
-              </CardContent>
-            </Card>
+          {surah.ayat.map((ayat, index) => (
+            <AyatCard
+              key={ayat.nomorAyat}
+              ayat={ayat}
+              surahNomor={surah.nomor}
+              surahNama={surah.namaLatin}
+              tafsir={tafsir?.ayat?.find((a) => a.nomorAyat === ayat.nomorAyat)}
+              onPlay={(audioUrl) => handlePlayAudio(audioUrl, index)}
+              onNoteClick={() => handleNoteClick(ayat.nomorAyat)}
+            />
           ))}
         </div>
       </main>
@@ -178,21 +200,50 @@ export function SurahDetail() {
       {currentAudio && (
         <AudioPlayer
           audioUrl={currentAudio}
-          onEnded={() => setCurrentAudio("")}
+          onEnded={handleAudioEnded}
+          audioRef={audioRef}
         />
       )}
 
+      <NoteDialog
+        open={showNoteDialog}
+        onOpenChange={setShowNoteDialog}
+        surahNomor={surah.nomor}
+        ayatNomor={selectedAyatForNote}
+      />
+
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">Pengaturan Tampilan</DialogTitle>
             <DialogDescription>
-              Sesuaikan tampilan ayat sesuai preferensi Anda
+              Sesuaikan tampilan dan audio sesuai preferensi Anda
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
-            {/* Section: Ukuran Font */}
+            <section className="space-y-4">
+              <div>
+                <h3 className="text-base font-semibold">Qari Audio</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Pilih qari untuk audio ayat
+                </p>
+              </div>
+              <Select
+                value={settings.selectedQari}
+                onChange={(e) => updateSettings({ selectedQari: e.target.value })}
+                className="cursor-pointer"
+              >
+                {QARI_OPTIONS.map((qari) => (
+                  <option key={qari.value} value={qari.value}>
+                    {qari.label}
+                  </option>
+                ))}
+              </Select>
+            </section>
+
+            <Separator />
+
             <section className="space-y-4">
               <div>
                 <h3 className="text-base font-semibold">Ukuran Font</h3>
@@ -200,9 +251,7 @@ export function SurahDetail() {
                   Sesuaikan ukuran font untuk kenyamanan membaca
                 </p>
               </div>
-
               <div className="space-y-5">
-                {/* Font Arab */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="arab-font-dialog" className="text-base font-medium">
@@ -221,14 +270,9 @@ export function SurahDetail() {
                     onValueChange={(value: number[]) =>
                       updateSettings({ arabFontSize: value[0] })
                     }
-                    className="w-full"
+                    className="w-full cursor-pointer"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Ukuran font untuk teks Arab (16px - 32px)
-                  </p>
                 </div>
-
-                {/* Font Latin */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="latin-font-dialog" className="text-base font-medium">
@@ -247,25 +291,58 @@ export function SurahDetail() {
                     onValueChange={(value: number[]) =>
                       updateSettings({ latinFontSize: value[0] })
                     }
-                    className="w-full"
+                    className="w-full cursor-pointer"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Ukuran font untuk teks Latin (12px - 20px)
-                  </p>
                 </div>
               </div>
             </section>
 
             <Separator />
 
-            {/* Section: Terjemahan */}
             <section className="space-y-4">
               <div>
-                <h3 className="text-base font-semibold">Terjemahan</h3>
+                <h3 className="text-base font-semibold">Audio</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Tampilkan atau sembunyikan terjemahan Indonesia
+                  Pengaturan pemutaran audio
                 </p>
               </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between rounded-lg border bg-card p-4">
+                  <div className="flex-1">
+                    <Label className="text-base font-medium">Auto-play Ayat Berikutnya</Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Otomatis memutar ayat berikutnya setelah selesai
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.autoPlayNext}
+                    onCheckedChange={(checked: boolean) =>
+                      updateSettings({ autoPlayNext: checked })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Mode Repeat</Label>
+                  <Select
+                    value={settings.repeatMode}
+                    onChange={(e) =>
+                      updateSettings({
+                        repeatMode: e.target.value as "off" | "ayat" | "surah",
+                      })
+                    }
+                    className="cursor-pointer"
+                  >
+                    <option value="off" className="cursor-pointer">Tidak</option>
+                    <option value="ayat" className="cursor-pointer">Repeat Ayat</option>
+                    <option value="surah" className="cursor-pointer">Repeat Surah</option>
+                  </Select>
+                </div>
+              </div>
+            </section>
+
+            <Separator />
+
+            <section className="space-y-4">
               <div className="flex items-center justify-between rounded-lg border bg-card p-4">
                 <div className="flex-1">
                   <Label htmlFor="translation-toggle-dialog" className="text-base font-medium">
@@ -283,7 +360,6 @@ export function SurahDetail() {
                   onCheckedChange={(checked: boolean) =>
                     updateSettings({ showTranslation: checked })
                   }
-                  className="shrink-0"
                 />
               </div>
             </section>
@@ -293,4 +369,3 @@ export function SurahDetail() {
     </div>
   );
 }
-
