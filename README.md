@@ -1,73 +1,101 @@
-# React + TypeScript + Vite
+# Al-Qur'an Digital
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplikasi web Al-Qur'an Digital, dibangun dengan React dan TypeScript. Aplikasi ini menyediakan akses mudah untuk membaca, mendengarkan, dan mempelajari Al-Qur'an dengan berbagai fitur interaktif.
 
-Currently, two official plugins are available:
+## 🛠️ Teknologi
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 19** - UI Framework
+- **TypeScript** - Type Safety
+- **Vite** - Build Tool
+- **React Router** - Routing
+- **Tailwind CSS** - Styling
+- **Shadcn UI** - Component Library
+- **Radix UI** - Accessible Components
+- **EQuran.id API** - Data Source
 
-## React Compiler
+## 📦 Instalasi
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Clone repository:
+```bash
+git clone <repository-url>
+cd landing-pages
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2. Install dependencies:
+```bash
+npm install
 ```
+
+## 🚀 Menjalankan
+
+### Development
+```bash
+npm run dev
+```
+
+Aplikasi akan berjalan di `http://localhost:5173`
+
+### Build
+```bash
+npm run build
+```
+
+### Preview Production Build
+```bash
+npm run preview
+```
+
+## 📁 Struktur Proyek
+
+```
+src/
+├── components/       # Komponen UI reusable
+│   ├── ui/          # Shadcn UI components
+│   ├── AudioPlayer.tsx
+│   ├── AyatCard.tsx
+│   ├── BottomNav.tsx
+│   ├── NoteDialog.tsx
+│   └── ShareDialog.tsx
+├── contexts/        # React Context untuk state management
+│   ├── SettingsContext.tsx
+│   ├── BookmarkContext.tsx
+│   ├── HistoryContext.tsx
+│   ├── NotesContext.tsx
+│   └── ProgressContext.tsx
+├── pages/           # Halaman aplikasi
+│   ├── Home.tsx
+│   ├── SurahDetail.tsx
+│   ├── SurahListPage.tsx
+│   ├── BookmarkPage.tsx
+│   ├── SettingsPage.tsx
+│   └── JuzPage.tsx
+├── services/        # API services
+│   └── api.ts
+├── types/           # TypeScript types
+│   └── api.ts
+└── App.tsx          # Root component
+```
+
+## ⚙️ Konfigurasi
+
+### Environment Variables
+
+Buat file `.env` di root project (opsional):
+
+```env
+VITE_BASE_URL=https://equran.id/api/v2
+
+## 📄 Lisensi
+
+Proyek ini dibuat untuk tujuan edukasi dan pembelajaran.
+```
+
+## 🙏 Credits
+
+- **API**: [EQuran.id](https://equran.id)
+- **Icons**: [Lucide React](https://lucide.dev)
+- **UI Components**: [Shadcn UI](https://ui.shadcn.com)
+
+---
+
+Dibuat dengan ❤️ untuk memudahkan akses Al-Qur'an Digital
