@@ -52,7 +52,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (settings.nightModeStart && settings.nightModeEnd) {
       const checkNightMode = () => {
         const now = new Date();
-        const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
         const [startH, startM] = settings.nightModeStart.split(":").map(Number);
         const [endH, endM] = settings.nightModeEnd.split(":").map(Number);
         const startTime = startH * 60 + startM;

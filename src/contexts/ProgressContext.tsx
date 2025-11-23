@@ -28,7 +28,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("quran-progress", JSON.stringify(progress));
   }, [progress]);
 
-  const markAyatRead = (surahNomor: number, ayatNomor: number, totalAyat: number) => {
+  const markAyatRead = (surahNomor: number, ayatNomor: number) => {
     setProgress((prev) => {
       const existing = prev.find((p) => p.surahNomor === surahNomor);
       if (existing) {
