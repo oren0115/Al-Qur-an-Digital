@@ -1,6 +1,6 @@
-import type { ApiResponse, Surah, SurahDetail, Tafsir } from "@/types/api";
+import type { ApiResponse, Surah, SurahDetail, Tafsir, Doa, DoaApiResponse } from "@/types/api";
 
-const API_BASE = import.meta.env.VITE_BASE_URL || "https://equran.id/api/v2";
+const API_BASE = import.meta.env.VITE_BASE_URL;
 
 export async function getSurahList(): Promise<Surah[]> {
   const response = await fetch(`${API_BASE}/surat`);
@@ -17,6 +17,12 @@ export async function getSurahDetail(nomor: number): Promise<SurahDetail> {
 export async function getTafsir(nomor: number): Promise<Tafsir> {
   const response = await fetch(`${API_BASE}/tafsir/${nomor}`);
   const data: ApiResponse<Tafsir> = await response.json();
+  return data.data;
+}
+
+export async function getDoaList(): Promise<Doa[]> {
+  const response = await fetch("https://equran.id/api/doa");
+  const data: DoaApiResponse = await response.json();
   return data.data;
 }
 

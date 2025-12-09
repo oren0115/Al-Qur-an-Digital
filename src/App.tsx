@@ -11,6 +11,8 @@ import { BookmarkPage } from "@/pages/BookmarkPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { JuzPage } from "@/pages/JuzPage";
 import { SurahListPage } from "@/pages/SurahListPage";
+import { DoaListPage } from "@/pages/DoaListPage";
+import { DoaDetailPage } from "@/pages/DoaDetailPage";
 import "./css/index.css";
 
 function App() {
@@ -29,6 +31,8 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/surah/:nomor" element={<SurahDetail />} />
                   <Route path="/surah-list" element={<SurahListPage />} />
+                  <Route path="/doa" element={<DoaListPage />} />
+                  <Route path="/doa/:id" element={<DoaDetailPage />} />
                   <Route path="/bookmark" element={<BookmarkPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/juz" element={<JuzPage />} />

@@ -60,3 +60,20 @@ export interface Bookmark {
   timestamp: number;
 }
 
+export interface Doa {
+  id: number;
+  grup: string;
+  nama: string;
+  ar: string;
+  tr: string;
+  idn: string;
+  tentang: string;
+  tag: string[];
+}
+
+export interface DoaApiResponse {
+  status: string;
+  total: number;
+  data: Doa[];
+}
+

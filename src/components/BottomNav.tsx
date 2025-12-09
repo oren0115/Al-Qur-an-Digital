@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { BookOpen, Bookmark, Settings, List } from "lucide-react";
+import { BookOpen, Bookmark, Settings, List, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function BottomNav() {
@@ -8,6 +8,7 @@ export function BottomNav() {
   const navItems = [
     { path: "/", icon: BookOpen, label: "Qur'an" },
     { path: "/surah-list", icon: List, label: "Surah" },
+    { path: "/doa", icon: Heart, label: "Doa" },
     { path: "/bookmark", icon: Bookmark, label: "Bookmark" },
     { path: "/settings", icon: Settings, label: "Settings" },
   ];
@@ -19,7 +20,8 @@ export function BottomNav() {
           const Icon = item.icon;
           const isActive =
             location.pathname === item.path ||
-            (item.path === "/" && location.pathname.startsWith("/surah"));
+            (item.path === "/surah-list" && location.pathname.startsWith("/surah/")) ||
+            (item.path === "/doa" && location.pathname.startsWith("/doa/"));
           return (
             <Link
               key={item.path}
