@@ -17,8 +17,8 @@ Aplikasi web Al-Qur'an Digital, dibangun dengan React dan TypeScript. Aplikasi i
 
 1. Clone repository:
 ```bash
-git clone <repository-url>
-cd landing-pages
+git clone https://github.com/oren0115/Al-Qur-an-Digital
+cd Al-Qur-an-Digital
 ```
 
 2. Install dependencies:
